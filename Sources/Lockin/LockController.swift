@@ -143,7 +143,7 @@ final class LockController: ObservableObject {
         guard let front = NSWorkspace.shared.frontmostApplication,
               let bundleID = front.bundleIdentifier,
               front.processIdentifier != getpid(),
-              bundleID != Bundle.main.bundleIdentifier else { return } // never lock Anchor itself
+              bundleID != Bundle.main.bundleIdentifier else { return } // never lock Lockin itself
 
         let pid = front.processIdentifier
         let appEl = AXUIElementCreateApplication(pid)
@@ -229,7 +229,26 @@ final class LockController: ObservableObject {
         state = .unlocked
     }
 
+#if LOCKIN_PREVIEW
+    /// Snapshot-harness only: force UI states without touching AX or the tap.
+    func previewLock(browser: Bool, tabTitle: String?, minutes: Int?, auto: Bool) {
+        let el = AXUIElementCreateApplication(getpid())
+        let t = LockTarget(
+            pid: pid_t(getpid()),
+            bundleID: browser ? "company.thebrowser.dia" : "com.apple.TextEdit",
+            appName: browser ? "Dia" : "TextEdit",
+            appElement: el, windowElement: el,
+            browserKind: browser ? .dia : nil
+        )
+        lockedTabTitle = tabTitle
+        minLockChoiceMinutes = minutes
+        autoUnlockAtTimerEnd = auto
+        minLockUntil = minutes.map { Date().addingTimeInterval(Double($0) * 60 - 133) }
+        state = .locked(t)
+    }
+#endif
+
     private func handleAutomationDenied() {
-        degradedNote = "Automation is off — Anchor can't steer tabs. Enable it in System Settings ▸ Privacy ▸ Automation."
+        degradedNote = "Automation is off — Lockin can't steer tabs. Enable it in System Settings ▸ Privacy ▸ Automation."
     }
 }

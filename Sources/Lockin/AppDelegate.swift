@@ -61,15 +61,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             renderer.scale = 2
             guard let img = renderer.nsImage else { return nil }
             img.isTemplate = !locked
-            img.accessibilityDescription = locked ? "Anchor — locked" : "Anchor — unlocked"
+            img.accessibilityDescription = locked ? "Lockin — locked" : "Lockin — unlocked"
             return img
         }
     }
 
-    // anchor://kitty-input — pinged by the Claude Code Notification hook when a
+    // lockin://kitty-input — pinged by the Claude Code Notification hook when a
     // session inside kitty is waiting on the user. Only meaningful while locked.
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.scheme == "anchor" && url.host == "kitty-input" {
+        for url in urls where url.scheme == "lockin" && url.host == "kitty-input" {
             controller.beginKittyException()
         }
     }

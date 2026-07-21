@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>Anchor</string>
+	<string>Lockin</string>
 	<key>CFBundleDisplayName</key>
-	<string>Anchor</string>
+	<string>Lockin</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.tejasdua.anchor</string>
+	<string>com.tejasdua.lockin</string>
 	<key>CFBundleExecutable</key>
-	<string>Anchor</string>
+	<string>Lockin</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -23,15 +23,15 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Anchor keeps your browser on the tab you locked.</string>
+	<string>Lockin keeps your browser on the tab you locked.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.tejasdua.anchor</string>
+			<string>com.tejasdua.lockin</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>anchor</string>
+				<string>lockin</string>
 			</array>
 		</dict>
 	</array>

@@ -13,7 +13,7 @@ final class TabLock {
     private(set) var tabTitle: String?
     private var automationDeniedSurfaced = false
 
-    private let queue = DispatchQueue(label: "com.tejasdua.anchor.applescript")
+    private let queue = DispatchQueue(label: "com.tejasdua.lockin.applescript")
     private var timer: Timer?
     private var busy = false
 

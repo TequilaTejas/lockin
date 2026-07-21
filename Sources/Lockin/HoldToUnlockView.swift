@@ -22,9 +22,9 @@ struct HoldToUnlockView: View {
                 .trim(from: 0, to: progress)
                 .stroke(Color.orange, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            (pressing ? Phos.lockSimpleOpenFill : Phos.lockSimpleFill)
+            (pressing ? Phos.lockOpenFill : Phos.lockFill)
                 .color(.orange)
-                .frame(width: 21, height: 21)
+                .frame(width: 24, height: 24)
         }
         .frame(width: 58, height: 58)
         .scaleEffect(pressing ? 0.94 : 1)

@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Anchor",
+    name: "Lockin",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "Anchor",
-            path: "Sources/Anchor"
+            name: "Lockin",
+            path: "Sources/Lockin"
         )
     ]
 )

@@ -1,7 +1,7 @@
 import Foundation
 
 /// User preferences, persisted as JSON in
-/// ~/Library/Application Support/Anchor/settings.json
+/// ~/Library/Application Support/Lockin/settings.json
 struct Settings: Codable {
     var holdSeconds: Double
     var emergencyEscEnabled: Bool
@@ -17,7 +17,7 @@ struct Settings: Codable {
 
     private static var fileURL: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Anchor", isDirectory: true)
+            .appendingPathComponent("Lockin", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("settings.json")
     }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Creates a self-signed "Anchor Dev" code-signing certificate in your login
+# Creates a self-signed "Lockin Dev" code-signing certificate in your login
 # keychain. build.sh picks it up automatically, which keeps the app's signature
 # stable across rebuilds so macOS remembers your Accessibility grant.
 #
@@ -9,7 +9,7 @@
 # macOS shows a password dialog when the certificate is marked trusted.
 set -euo pipefail
 
-NAME="Anchor Dev"
+NAME="Lockin Dev"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
 if security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$NAME\""; then

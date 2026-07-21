@@ -2,7 +2,16 @@ import AppKit
 import ApplicationServices
 
 enum Permissions {
-    static var isTrusted: Bool { AXIsProcessTrusted() }
+#if LOCKIN_PREVIEW
+    static var previewTrusted = true
+#endif
+
+    static var isTrusted: Bool {
+#if LOCKIN_PREVIEW
+        if previewTrusted { return true }
+#endif
+        return AXIsProcessTrusted()
+    }
 
     /// Prompts for Accessibility on first use. Returns current trust immediately;
     /// the system shows its grant dialog asynchronously.

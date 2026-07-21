@@ -22,6 +22,6 @@ SOFTWARE.
 
 ---
 
-Icon artwork in Sources/Anchor/PhosphorIcons.swift is derived from Phosphor
+Icon artwork in Sources/Lockin/PhosphorIcons.swift is derived from Phosphor
 Icons (https://phosphoricons.com), copyright (c) 2023 Phosphor Icons,
 also licensed under the MIT License.

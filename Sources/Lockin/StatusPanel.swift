@@ -71,9 +71,23 @@ final class StatusPanelController {
 }
 
 enum PanelMetrics {
-    static let width: CGFloat = 288
-    static let corner: CGFloat = 14
+    static let width: CGFloat = 296
+    static let corner: CGFloat = 24
     static let pad: CGFloat = 16
+}
+
+/// Always-dark token set, matched to the reference: near-black ground,
+/// elevated tiles, one glowing orange accent, white pill CTA.
+enum Ink {
+    static let ground = Color(red: 0.055, green: 0.058, blue: 0.07)
+    static let tile = Color.white.opacity(0.07)
+    static let tilePressed = Color.white.opacity(0.12)
+    static let group = Color.white.opacity(0.05)
+    static let hairline = Color.white.opacity(0.07)
+    static let text = Color.white
+    static let secondary = Color.white.opacity(0.55)
+    static let tertiary = Color.white.opacity(0.32)
+    static let accent = Color.orange
 }
 
 private struct PanelSizeKey: PreferenceKey {
@@ -97,39 +111,15 @@ struct StatusPanelView: View {
         .frame(width: PanelMetrics.width)
         .fixedSize(horizontal: false, vertical: true)
         .background(RoundedRectangle(cornerRadius: PanelMetrics.corner, style: .continuous)
-            .fill(Color(nsColor: .windowBackgroundColor)))
+            .fill(Ink.ground))
         .overlay(RoundedRectangle(cornerRadius: PanelMetrics.corner, style: .continuous)
-            .strokeBorder(Color.primary.opacity(0.09)))
+            .strokeBorder(Ink.hairline))
         .clipShape(RoundedRectangle(cornerRadius: PanelMetrics.corner, style: .continuous))
+        .environment(\.colorScheme, .dark)
         .background(GeometryReader { g in
             Color.clear.preference(key: PanelSizeKey.self, value: g.size)
         })
         .onPreferenceChange(PanelSizeKey.self, perform: onResize)
-    }
-}
-
-// MARK: - Overline
-
-private struct Overline: View {
-    var locked = false
-
-    var body: some View {
-        HStack {
-            Text("LOCKIN")
-                .font(.system(size: 10, weight: .semibold))
-                .tracking(1.4)
-                .foregroundStyle(.tertiary)
-            Spacer()
-            if locked {
-                HStack(spacing: 4) {
-                    Phos.lockFill.color(.orange).frame(width: 10, height: 10)
-                    Text("LOCKED")
-                        .font(.system(size: 10, weight: .semibold))
-                        .tracking(1.4)
-                        .foregroundStyle(.orange)
-                }
-            }
-        }
     }
 }
 
@@ -142,22 +132,25 @@ private struct TargetRow: View {
     var subtitleLines = 1
 
     var body: some View {
-        HStack(spacing: 11) {
-            if let icon {
-                Image(nsImage: icon)
-                    .resizable()
-                    .frame(width: 36, height: 36)
-            } else {
-                Phos.appWindow.color(.secondary)
-                    .frame(width: 26, height: 26)
-                    .frame(width: 36, height: 36)
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Ink.tile)
+                if let icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                } else {
+                    Phos.appWindow.color(Ink.secondary).frame(width: 22, height: 22)
+                }
             }
+            .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Ink.text)
                 Text(subtitle)
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Ink.secondary)
                     .lineLimit(subtitleLines)
             }
             Spacer(minLength: 0)
@@ -173,12 +166,9 @@ private struct UnlockedView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Overline()
-                .padding(.top, 14)
-
             if !Permissions.isTrusted {
                 permissionBlock
-                    .padding(.top, 14)
+                    .padding(.top, PanelMetrics.pad)
             } else if let front = controller.frontmostLockable() {
                 TargetRow(
                     icon: front.icon,
@@ -186,10 +176,13 @@ private struct UnlockedView: View {
                     subtitle: front.isBrowser ? "Window and active tab get pinned"
                                               : "This window gets pinned"
                 )
-                .padding(.top, 14)
+                .padding(.top, PanelMetrics.pad)
 
-                timerSection
-                    .padding(.top, 18)
+                timerTiles
+                    .padding(.top, 14)
+
+                settingsGroup
+                    .padding(.top, 12)
 
                 Button {
                     controller.lock()
@@ -197,81 +190,125 @@ private struct UnlockedView: View {
                 } label: {
                     Text("Lock This Window")
                 }
-                .buttonStyle(FlatProminentButtonStyle())
-                .padding(.top, 18)
+                .buttonStyle(PillCTAStyle())
+                .padding(.top, 16)
             } else {
                 Text("Bring the window you want to lock to the front, then open this menu again.")
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 14)
+                    .foregroundStyle(Ink.secondary)
+                    .padding(.top, PanelMetrics.pad)
             }
 
             if let reason = controller.lastUnlockReason {
                 Text(reason)
                     .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Ink.tertiary)
                     .padding(.top, 10)
             }
 
             footer
-                .padding(.top, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
         }
         .padding(.horizontal, PanelMetrics.pad)
     }
 
-    private var timerSection: some View {
+    private var timerTiles: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Stay locked for")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            ChipPicker(selection: $controller.minLockChoiceMinutes)
-
-            if controller.minLockChoiceMinutes != nil {
-                HStack {
-                    Text("Auto-unlock when time's up")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    MiniSwitch(isOn: $controller.autoUnlockAtTimerEnd)
-                }
-                .padding(.top, 2)
+                .foregroundStyle(Ink.secondary)
+            HStack(spacing: 6) {
+                tile(label: "Off", caption: "timer", value: 0)
+                tile(label: "10", caption: "min", value: 10)
+                tile(label: "20", caption: "min", value: 20)
+                tile(label: "30", caption: "min", value: 30)
+                tile(label: "60", caption: "min", value: 60)
             }
         }
     }
 
+    private func tile(label: String, caption: String, value: Int) -> some View {
+        let selected = (controller.minLockChoiceMinutes ?? 0) == value
+        return Button {
+            controller.minLockChoiceMinutes = value == 0 ? nil : value
+        } label: {
+            VStack(spacing: 1) {
+                Text(label)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(selected ? Color.black : Ink.text)
+                Text(caption)
+                    .font(.system(size: 8.5, weight: .medium))
+                    .foregroundStyle(selected ? Color.black.opacity(0.6) : Ink.tertiary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(selected ? Ink.accent : Ink.tile))
+            .shadow(color: selected ? Ink.accent.opacity(0.45) : .clear, radius: 9)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var settingsGroup: some View {
+        VStack(spacing: 0) {
+            if controller.minLockChoiceMinutes != nil {
+                row("Auto-unlock when time's up") {
+                    MiniSwitch(isOn: $controller.autoUnlockAtTimerEnd)
+                }
+                Rectangle().fill(Ink.hairline).frame(height: 1)
+                    .padding(.leading, 14)
+            }
+            row("Block Spotlight while locked") {
+                MiniSwitch(isOn: $controller.settings.blockSpotlight)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Ink.group))
+    }
+
+    private func row(_ label: String, @ViewBuilder trailing: () -> some View) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundStyle(Ink.text)
+            Spacer()
+            trailing()
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 40)
+    }
+
     private var permissionBlock: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Phos.warningFill.color(.orange).frame(width: 12, height: 12)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 7) {
+                Phos.warningFill.color(Ink.accent).frame(width: 13, height: 13)
                 Text("Accessibility permission needed")
                     .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Ink.text)
             }
             Text("Lockin blocks shortcuts and clicks through the Accessibility API. Grant it, then reopen this menu.")
                 .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Ink.secondary)
             Button("Open System Settings…") {
                 Permissions.promptForAccessibility()
                 Permissions.openAccessibilitySettings()
             }
-            .buttonStyle(QuietButtonStyle())
+            .buttonStyle(TileButtonStyle())
         }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Ink.group))
     }
 
     private var footer: some View {
-        VStack(spacing: 0) {
-            Divider()
-            HStack {
-                Button("Quit Lockin") { NSApp.terminate(nil) }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("Hold Esc 5s to force-unlock")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.vertical, 11)
+        HStack {
+            Button("Quit Lockin") { NSApp.terminate(nil) }
+                .buttonStyle(.plain)
+                .font(.system(size: 11))
+                .foregroundStyle(Ink.tertiary)
+            Spacer()
+            Text("Hold Esc 5s to force-unlock")
+                .font(.system(size: 10))
+                .foregroundStyle(Ink.tertiary)
         }
     }
 }
@@ -284,32 +321,38 @@ private struct LockedView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Overline(locked: true)
-                .padding(.top, 14)
-
-            if let t = controller.lockedTarget {
-                TargetRow(
-                    icon: controller.lockedAppIcon,
-                    name: t.appName,
-                    subtitle: t.isBrowser
-                        ? (controller.lockedTabTitle ?? "Pinned to the active tab")
-                        : "Pinned to this window",
-                    subtitleLines: 2
-                )
-                .padding(.top, 14)
+            HStack {
+                if let t = controller.lockedTarget {
+                    TargetRow(
+                        icon: controller.lockedAppIcon,
+                        name: t.appName,
+                        subtitle: t.isBrowser
+                            ? (controller.lockedTabTitle ?? "Pinned to the active tab")
+                            : "Pinned to this window",
+                        subtitleLines: 2
+                    )
+                }
+            }
+            .padding(.top, PanelMetrics.pad)
+            .overlay(alignment: .topTrailing) {
+                // The glowing accent: locked state announces itself.
+                Phos.lockFill.color(Ink.accent)
+                    .frame(width: 14, height: 14)
+                    .shadow(color: Ink.accent.opacity(0.8), radius: 7)
+                    .padding(.top, PanelMetrics.pad + 2)
             }
 
             unlockArea
                 .frame(maxWidth: .infinity)
-                .padding(.top, 20)
+                .padding(.top, 22)
 
             if let note = controller.degradedNote {
                 HStack(alignment: .top, spacing: 6) {
-                    Phos.warning.color(.secondary).frame(width: 11, height: 11)
+                    Phos.warning.color(Ink.secondary).frame(width: 11, height: 11)
                         .padding(.top, 1)
                     Text(note)
                         .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Ink.secondary)
                 }
                 .padding(.top, 14)
             }
@@ -317,7 +360,7 @@ private struct LockedView: View {
             if controller.kittyExceptionActive {
                 Text("kitty is up — Return snaps you back")
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Ink.secondary)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 14)
             } else if controller.kittyAvailable {
@@ -325,19 +368,19 @@ private struct LockedView: View {
                     controller.beginKittyException()
                     onClose()
                 } label: {
-                    HStack(spacing: 6) {
-                        Phos.terminalWindow.color(.primary).frame(width: 12, height: 12)
+                    HStack(spacing: 7) {
+                        Phos.terminalWindow.color(Ink.text).frame(width: 13, height: 13)
                         Text("Answer kitty")
                     }
                 }
-                .buttonStyle(QuietButtonStyle())
+                .buttonStyle(TileButtonStyle())
                 .frame(maxWidth: .infinity)
-                .padding(.top, 14)
+                .padding(.top, 16)
             }
 
             Text("Hold Esc 5 s for emergency unlock")
                 .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Ink.tertiary)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 14)
                 .padding(.bottom, 12)
@@ -348,20 +391,21 @@ private struct LockedView: View {
     private var unlockArea: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             if let until = controller.unlockBlockedUntil {
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     VStack(spacing: 2) {
                         Text(remaining(until: until, now: context.date))
-                            .font(.system(size: 34, weight: .semibold, design: .rounded).monospacedDigit())
-                            .kerning(0.5)
+                            .font(.system(size: 36, weight: .semibold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(Ink.text)
                         Text(controller.autoUnlockAtTimerEnd ? "until auto-unlock" : "until unlock opens")
                             .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Ink.secondary)
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color.primary.opacity(0.08))
-                            Capsule().fill(Color.orange)
+                            Capsule().fill(Color.white.opacity(0.08))
+                            Capsule().fill(Ink.accent)
                                 .frame(width: geo.size.width * remainingFraction(until: until, now: context.date))
+                                .shadow(color: Ink.accent.opacity(0.6), radius: 5)
                         }
                     }
                     .frame(height: 4)
@@ -374,7 +418,7 @@ private struct LockedView: View {
                     }
                     Text("Hold to unlock")
                         .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Ink.secondary)
                 }
             }
         }
@@ -394,36 +438,6 @@ private struct LockedView: View {
 
 // MARK: - Controls
 
-private struct ChipPicker: View {
-    @Binding var selection: Int?
-    private let options: [(String, Int)] = [("Off", 0), ("10m", 10), ("20m", 20), ("30m", 30), ("60m", 60)]
-
-    var body: some View {
-        HStack(spacing: 5) {
-            ForEach(options, id: \.1) { label, value in
-                chip(label, value)
-            }
-        }
-    }
-
-    private func chip(_ label: String, _ value: Int) -> some View {
-        let selected = (selection ?? 0) == value
-        return Button {
-            selection = value == 0 ? nil : value
-        } label: {
-            Text(label)
-                .font(.system(size: 11, weight: selected ? .semibold : .medium))
-                .foregroundStyle(selected ? Color(nsColor: .windowBackgroundColor) : .primary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 25)
-                .background(
-                    Capsule().fill(selected ? Color.primary : Color.primary.opacity(0.055))
-                )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 private struct MiniSwitch: View {
     @Binding var isOn: Bool
 
@@ -432,12 +446,12 @@ private struct MiniSwitch: View {
             withAnimation(.spring(duration: 0.2)) { isOn.toggle() }
         } label: {
             Capsule()
-                .fill(isOn ? Color.primary : Color.primary.opacity(0.15))
-                .frame(width: 32, height: 19)
+                .fill(isOn ? Ink.accent : Color.white.opacity(0.14))
+                .frame(width: 34, height: 20)
                 .overlay(alignment: isOn ? .trailing : .leading) {
                     Circle()
                         .fill(.white)
-                        .shadow(color: .black.opacity(0.25), radius: 1, y: 0.5)
+                        .shadow(color: .black.opacity(0.3), radius: 1, y: 0.5)
                         .padding(2.5)
                 }
         }
@@ -445,26 +459,27 @@ private struct MiniSwitch: View {
     }
 }
 
-private struct FlatProminentButtonStyle: ButtonStyle {
+private struct PillCTAStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(Color.black)
             .frame(maxWidth: .infinity)
-            .frame(height: 38)
-            .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.orange.opacity(configuration.isPressed ? 0.8 : 1)))
-            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .frame(height: 44)
+            .background(Capsule().fill(Color.white.opacity(configuration.isPressed ? 0.82 : 1)))
+            .contentShape(Capsule())
     }
 }
 
-private struct QuietButtonStyle: ButtonStyle {
+private struct TileButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 11, weight: .medium))
-            .padding(.horizontal, 12)
-            .frame(height: 26)
-            .background(Capsule().fill(Color.primary.opacity(configuration.isPressed ? 0.12 : 0.055)))
-            .contentShape(Capsule())
+            .foregroundStyle(Ink.text)
+            .padding(.horizontal, 14)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(configuration.isPressed ? Ink.tilePressed : Ink.tile))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
